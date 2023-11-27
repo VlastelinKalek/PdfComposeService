@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v4.25.1
-// source: api/api.proto
+// source: api/api-stream.proto
 
 package composeserver
 
@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Server_ComposePDF_FullMethodName = "/service.Server/ComposePDF"
+	Server_ComposePDF_FullMethodName = "/composeserver.Server/ComposePDF"
 )
 
 // ServerClient is the client API for Server service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ServerClient interface {
-	ComposePDF(ctx context.Context, in *FileList, opts ...grpc.CallOption) (*FilePDF, error)
+	ComposePDF(ctx context.Context, opts ...grpc.CallOption) (Server_ComposePDFClient, error)
 }
 
 type serverClient struct {
@@ -37,20 +37,42 @@ func NewServerClient(cc grpc.ClientConnInterface) ServerClient {
 	return &serverClient{cc}
 }
 
-func (c *serverClient) ComposePDF(ctx context.Context, in *FileList, opts ...grpc.CallOption) (*FilePDF, error) {
-	out := new(FilePDF)
-	err := c.cc.Invoke(ctx, Server_ComposePDF_FullMethodName, in, out, opts...)
+func (c *serverClient) ComposePDF(ctx context.Context, opts ...grpc.CallOption) (Server_ComposePDFClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Server_ServiceDesc.Streams[0], Server_ComposePDF_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	x := &serverComposePDFClient{stream}
+	return x, nil
+}
+
+type Server_ComposePDFClient interface {
+	Send(*FileList) error
+	Recv() (*FilePDF, error)
+	grpc.ClientStream
+}
+
+type serverComposePDFClient struct {
+	grpc.ClientStream
+}
+
+func (x *serverComposePDFClient) Send(m *FileList) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *serverComposePDFClient) Recv() (*FilePDF, error) {
+	m := new(FilePDF)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 // ServerServer is the server API for Server service.
 // All implementations must embed UnimplementedServerServer
 // for forward compatibility
 type ServerServer interface {
-	ComposePDF(context.Context, *FileList) (*FilePDF, error)
+	ComposePDF(Server_ComposePDFServer) error
 	mustEmbedUnimplementedServerServer()
 }
 
@@ -58,8 +80,8 @@ type ServerServer interface {
 type UnimplementedServerServer struct {
 }
 
-func (UnimplementedServerServer) ComposePDF(context.Context, *FileList) (*FilePDF, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ComposePDF not implemented")
+func (UnimplementedServerServer) ComposePDF(Server_ComposePDFServer) error {
+	return status.Errorf(codes.Unimplemented, "method ComposePDF not implemented")
 }
 func (UnimplementedServerServer) mustEmbedUnimplementedServerServer() {}
 
@@ -74,36 +96,46 @@ func RegisterServerServer(s grpc.ServiceRegistrar, srv ServerServer) {
 	s.RegisterService(&Server_ServiceDesc, srv)
 }
 
-func _Server_ComposePDF_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(FileList)
-	if err := dec(in); err != nil {
+func _Server_ComposePDF_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(ServerServer).ComposePDF(&serverComposePDFServer{stream})
+}
+
+type Server_ComposePDFServer interface {
+	Send(*FilePDF) error
+	Recv() (*FileList, error)
+	grpc.ServerStream
+}
+
+type serverComposePDFServer struct {
+	grpc.ServerStream
+}
+
+func (x *serverComposePDFServer) Send(m *FilePDF) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *serverComposePDFServer) Recv() (*FileList, error) {
+	m := new(FileList)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
-	if interceptor == nil {
-		return srv.(ServerServer).ComposePDF(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: Server_ComposePDF_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServerServer).ComposePDF(ctx, req.(*FileList))
-	}
-	return interceptor(ctx, in, info, handler)
+	return m, nil
 }
 
 // Server_ServiceDesc is the grpc.ServiceDesc for Server service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Server_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "service.Server",
+	ServiceName: "composeserver.Server",
 	HandlerType: (*ServerServer)(nil),
-	Methods: []grpc.MethodDesc{
+	Methods:     []grpc.MethodDesc{},
+	Streams: []grpc.StreamDesc{
 		{
-			MethodName: "ComposePDF",
-			Handler:    _Server_ComposePDF_Handler,
+			StreamName:    "ComposePDF",
+			Handler:       _Server_ComposePDF_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/api.proto",
+	Metadata: "api/api-stream.proto",
 }
