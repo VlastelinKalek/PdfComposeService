@@ -1,4 +1,4 @@
-module github.com/VlastelinKalek/pdfcomposeservice
+module github.com/VlastelinKalek/pdfcomposeservice/v2
 
 go 1.21.2
 
